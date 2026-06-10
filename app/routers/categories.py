@@ -3,6 +3,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
+from app.auth import get_current_admin
 from app.db_depends import get_async_db, get_db
 from app.models.categories import Category as CategoryModel
 from app.schemas import Category as CategorySchema
@@ -27,7 +28,9 @@ async def get_all_categories(db: AsyncSession = Depends(get_async_db)):
     return categories
 
 
-@router.post("/", response_model=CategorySchema, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/", response_model=CategorySchema, status_code=status.HTTP_201_CREATED, dependencies=[Depends(get_current_admin)]
+)
 async def create_category(category: CategoryCreate, db: AsyncSession = Depends(get_async_db)):
     """
     Создаёт новую категорию.
@@ -49,7 +52,7 @@ async def create_category(category: CategoryCreate, db: AsyncSession = Depends(g
     return db_category
 
 
-@router.put("/{category_id}", response_model=CategorySchema)
+@router.put("/{category_id}", response_model=CategorySchema, dependencies=[Depends(get_current_admin)])
 async def update_category(category_id: int, category: CategoryCreate, db: AsyncSession = Depends(get_async_db)):
     """
     Обновляет категорию по её ID.
@@ -82,7 +85,12 @@ async def update_category(category_id: int, category: CategoryCreate, db: AsyncS
     return db_category
 
 
-@router.delete("/{category_id}", response_model=CategorySchema, status_code=status.HTTP_200_OK)
+@router.delete(
+    "/{category_id}",
+    response_model=CategorySchema,
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(get_current_admin)],
+)
 async def delete_category(category_id: int, db: AsyncSession = Depends(get_async_db)):
     """
     Логически удаляет категорию по её ID, устанавливая is_active=False.
