@@ -7,9 +7,11 @@ from app.auth import get_current_seller
 from app.db_depends import get_async_db, get_db
 from app.models.categories import Category as CategoryModel
 from app.models.products import Product as ProductModel
+from app.models.reviews import Review as ReviewModel
 from app.models.users import User as UserModel
 from app.schemas import Product as ProductSchema
 from app.schemas import ProductCreate
+from app.schemas import Review as ReviewSchema
 
 # Создаём маршрутизатор для товаров
 router = APIRouter(
@@ -145,3 +147,27 @@ async def delete_product(
     await db.refresh(product)  # Для возврата is_active = False
 
     return product
+
+
+@router.get("/{product_id}/reviews", response_model=list[ReviewSchema], status_code=status.HTTP_200_OK)
+async def get_product_reviews(product_id: int, db: AsyncSession = Depends(get_async_db)):
+    """
+    Возвращает список отзывов для текущего продукта.
+    """
+    # Проверка существования товара
+    stmt = select(ProductModel).where(and_(ProductModel.id == product_id, ProductModel.is_active == True))
+    product_scalar = await db.scalars(stmt)
+    product_result = product_scalar.first()
+    if product_result is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found or inactive")
+
+    # Получение отзывов для текущего товара
+    stmt = (
+        select(ReviewModel)
+        .where(and_(ReviewModel.product_id == product_id, ReviewModel.is_active == True))
+        .order_by(ReviewModel.id)
+    )
+    reviews_scalar = await db.scalars(stmt)
+    reviews_result = reviews_scalar.all()
+
+    return reviews_result
