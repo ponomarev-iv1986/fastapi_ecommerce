@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from app.routers import cart, categories, orders, products, reviews, users
 
@@ -15,6 +16,9 @@ app.include_router(users.router)
 app.include_router(reviews.router)
 app.include_router(cart.router)
 app.include_router(orders.router)
+
+# Подключаем статичные файлы
+app.mount("/media", StaticFiles(directory="media"), name="media")
 
 
 # Корневой эндпоинт для проверки
